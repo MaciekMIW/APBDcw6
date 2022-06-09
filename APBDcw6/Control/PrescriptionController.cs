@@ -1,4 +1,5 @@
 ﻿using APBDcw6.Models.DTO;
+using APBDcw6.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -11,9 +12,15 @@ namespace APBDcw6.Control
     [Route("api/{controller}")]
     public class PrescriptionController : ControllerBase
     {
+        private readonly IDbService _dbService;
+        public PrescriptionController(IDbService dbService)
+        {
+            _dbService = dbService;
+        }
         [HttpPost]
         public async Task<IActionResult> GetPrescription(InputPrescription prescription)
         {
+            var result = await _dbService.GetPrescription(prescription);
             return Ok();
         }
     }

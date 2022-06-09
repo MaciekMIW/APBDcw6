@@ -37,31 +37,44 @@ namespace APBDcw6.Services
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task<ReturnedPrescription> GetPrescription(InputPrescription prescription)
+        public async Task<IEnumerable<ReturnedPrescription>> GetPrescription(InputPrescription prescription)
         {
-            //get patient
+            //wybierz pacjenta
             var patient = await _dbContext.Patients.Where(e => 
                 e.FirstName.Equals(prescription.ReturnedPatient.FirstName) 
                 && e.LastName.Equals(prescription.ReturnedPatient.LastName)
                 && e.BirthDate.Equals(prescription.ReturnedPatient.BirthDate)
                 ).FirstOrDefaultAsync();
-            //get doctor
+            //wybierz doctora
             var doctor = await _dbContext.Doctors.Where(e =>
                 e.FirstName.Equals(prescription.ReturnedDoctor.FirstName)
                 && e.LastName.Equals(prescription.ReturnedDoctor.LastName)
                 && e.Email.Equals(prescription.ReturnedDoctor.Email)
                 ).FirstOrDefaultAsync();
-            //get prescriptions
+            //wybierz recepty wypisane przez doctora pacjentowi
             var prescriptionsBetweenDoctorAndPatient = await _dbContext.Prescriptions.Where(e => e.IdDoctor == doctor.IdDoctor && e.IdPatient == patient.IdPatient).ToListAsync();
-            //get medicaments
-            List<Medicament> medicaments = new List<Medicament>();
+            //wiybierz id lekarstw z zapytania
+            List<int> inputMedicaments = new List<int>();
             foreach(InputMedicament m in prescription.InputMedicaments)
             {
                 var medicament = await _dbContext.Medicaments.Where(e => e.Description.Equals(m.Description) && e.Name.Equals(m.Name)).FirstOrDefaultAsync();
-                medicaments.Add(medicament);
+                inputMedicaments.Add(medicament.IdMedicament);
             }
-            
-            return await _dbContext.Prescriptions.Select(e=> new ReturnedPrescription { }).FirstOrDefaultAsync();
+            //wybierz id lekarstw z recept oraz wszystkie recepty spełniające kryteria zapytania (może być więcej niż 1)
+            List<ReturnedPrescription> result = new List<ReturnedPrescription>();
+            foreach(Prescription p in prescriptionsBetweenDoctorAndPatient)
+            {
+                List<int> prescribedMedicamentIDs = new List<int>();
+                foreach(Prescription_Medicament pm in p.Prescription_Medicaments)
+                {
+                    prescribedMedicamentIDs.Add(pm.IdMedicament);
+                }
+                if (!prescribedMedicamentIDs.Except(inputMedicaments).Any())
+                {
+                    result.Add(new ReturnedPrescription { Date = p.Date, DueDate = p.DueDate, ReturnedDoctor = prescription.ReturnedDoctor, ReturnedPatient=prescription.ReturnedPatient });
+                }
+            }
+            return result;
         }
     }
 }

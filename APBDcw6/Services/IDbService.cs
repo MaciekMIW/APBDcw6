@@ -14,6 +14,6 @@ namespace APBDcw6.Services
         Task<ReturnedDoctor> GetDoctor(int id);
         Task DeleteDoctor(int id);
         Task AddDoctor(ReturnedDoctor doctor);
-        Task<ReturnedPrescription> GetPrescription(InputPrescription prescription);
+        Task<IEnumerable<ReturnedPrescription>> GetPrescription(InputPrescription prescription);
     }
 }
